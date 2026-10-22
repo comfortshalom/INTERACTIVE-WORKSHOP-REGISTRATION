@@ -18,6 +18,9 @@ export default function App() {
   // Registration list state
   const [items, setItems] = useState([]);
 
+  // Extension Feature State: Form submission success banner toast message
+  const [successMessage, setSuccessMessage] = useState('');
+
   // Controlled change handler function
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,12 +32,16 @@ export default function App() {
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
+    // Dismiss success feedback message on new user input action
+    if (successMessage) {
+      setSuccessMessage('');
+    }
   };
 
   function submit(e) {
     e.preventDefault();
     
-    // Step 3 Validation Block
+    // Validation Block
     const newErrors = {};
 
     // 1. Prevent empty name
@@ -42,17 +49,18 @@ export default function App() {
       newErrors.name = 'Full name is required.';
     }
 
-    // 2. Validate email structure
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // 2. Validate email structure (SIMPLIFIED & FIXED)
     if (!form.email.trim()) {
       newErrors.email = 'Email address is required.';
-    } else if (!emailRegex.test(form.email)) {
+    } else if (!form.email.includes('@') || !form.email.includes('.')) {
       newErrors.email = 'Please enter a valid email address.';
     }
 
-    // 3. Validate phone number (optional but must be digits if filled)
-    if (form.phone.trim() && !/^\+?[0-9\s-]{7,15}$/.test(form.phone)) {
-      newErrors.phone = 'Please enter a valid phone number (minimum 7 digits).';
+    // 3. Validate phone number (FIXED)
+    if (!form.phone.trim()) {
+      newErrors.phone = 'Phone number is required.';
+    } else if (form.phone.trim().length < 7) {
+      newErrors.phone = 'Please enter a valid phone number (Minimum 7 digits).';
     }
 
     // 4. Validate preferred date selection
@@ -70,16 +78,7 @@ export default function App() {
       }
     }
 
-    // 6. Validate portfolio URL pattern string
-    if (form.portfolio.trim()) {
-      try {
-        new URL(form.portfolio);
-      } catch (_) {
-        newErrors.portfolio = 'Please enter a valid absolute URL (e.g., https://mywork.com).';
-      }
-    }
-
-    // 7. Validate workshop selection dropdown
+    // 6. Validate workshop selection dropdown
     if (!form.workshop) {
       newErrors.workshop = 'Please choose a workshop track.';
     }
@@ -87,11 +86,17 @@ export default function App() {
     // If there are errors, save them to state and block submission
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setSuccessMessage('');
       return;
     }
 
-    // Step 4: If valid, add entry and clear fields
+    // If valid, add entry and clear fields immutably using array spread operator
     setItems([...items, { ...form, id: Date.now() }]);
+    
+    // Extension challenge trigger: Set success text notice
+    setSuccessMessage(`Success! ${form.name} has been successfully registered.`);
+    
+    // Reset form after submission
     setForm({ name: '', email: '', phone: '', date: '', age: '', portfolio: '', workshop: '' });
     setErrors({});
   }
@@ -99,6 +104,22 @@ export default function App() {
   return (
     <main style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
       <h1>Workshop Registration</h1>
+
+      {/* Extension Feature: Interactive Success Toast Notification Banner */}
+      {successMessage && (
+        <div style={{ 
+          backgroundColor: '#e8f5e9', 
+          color: '#2e7d32', 
+          padding: '12px', 
+          borderRadius: '4px', 
+          marginBottom: '15px', 
+          border: '1px solid #c8e6c9', 
+          fontWeight: '500',
+          fontSize: '14px' 
+        }}>
+          {successMessage}
+        </div>
+      )}
       
       <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         
@@ -119,7 +140,7 @@ export default function App() {
         {/* Phone Input */}
         <label style={{ display: 'flex', flexDirection: 'column' }}>
           Phone Number:
-          <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="e.g. +256700000000" />
+          <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="e.g. 0726046797" />
           {errors.phone && <span style={{ color: '#d32f2f', fontSize: '13px', marginTop: '4px', fontWeight: '500' }}>{errors.phone}</span>}
         </label>
 
@@ -139,9 +160,8 @@ export default function App() {
 
         {/* Portfolio URL Input */}
         <label style={{ display: 'flex', flexDirection: 'column' }}>
-          Portfolio URL:
-          <input type="url" name="portfolio" value={form.portfolio} onChange={handleChange} placeholder="https://example.com" />
-          {errors.portfolio && <span style={{ color: '#d32f2f', fontSize: '13px', marginTop: '4px', fontWeight: '500' }}>{errors.portfolio}</span>}
+          Portfolio URL / Path (Optional):
+          <input type="text" name="portfolio" value={form.portfolio} onChange={handleChange} placeholder="Optional link or path" />
         </label>
 
         {/* Workshop Selection */}
@@ -171,7 +191,7 @@ export default function App() {
               <strong style={{ fontSize: '16px' }}>{i.name}</strong> <span style={{ fontSize: '12px', background: '#e0e0e0', padding: '2px 6px', borderRadius: '3px', marginLeft: '5px' }}>Age: {i.age}</span>
               <p style={{ margin: '5px 0', fontSize: '14px', color: '#333' }}><strong>Workshop:</strong> {i.workshop}</p>
               <p style={{ margin: '2px 0', fontSize: '13px', color: '#666' }}>✉ {i.email} | 📞 {i.phone || 'N/A'}</p>
-              {i.portfolio && <p style={{ margin: '2px 0', fontSize: '13px' }}>🔗 <a href={i.portfolio} target="_blank" rel="noreferrer" style={{ color: '#0066cc' }}>Portfolio Link</a></p>}
+              {i.portfolio && <p style={{ margin: '2px 0', fontSize: '13px', color: '#666' }}>🔗 {i.portfolio}</p>}
               <p style={{ margin: '2px 0', fontSize: '13px', color: '#666' }}>📅 Date: {i.date}</p>
               <button 
                 onClick={() => setItems(items.filter((x) => x.id !== i.id))}
